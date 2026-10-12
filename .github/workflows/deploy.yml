@@ -1,0 +1,23 @@
+name: Deploy site
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unzip and deploy site
+        run: |
+          unzip -o deutschkurs-deploy3.zip -d /tmp/d3
+          cp -r /tmp/d3/deutschkurs-deploy3/. .
+          rm -rf deutschkurs-deploy3.zip /tmp/d3
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Update site: Deutschland verstehen videos" || echo "nothing to commit"
+          git push
