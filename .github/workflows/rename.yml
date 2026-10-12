@@ -1,0 +1,20 @@
+name: Rename HTML to index
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  rename:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rename deutschkurs-a1-b2.html to index.html
+        run: |
+          git mv deutschkurs-a1-b2.html index.html
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git commit -m "Rename to index.html"
+          git push
