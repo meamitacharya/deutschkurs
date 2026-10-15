@@ -851,24 +851,24 @@
       modelAudio.addEventListener('ended',stopModel);modelAudio.addEventListener('error',stopModel);userAudio.addEventListener('ended',stopUser);userAudio.addEventListener('error',stopUser);
 
       function startSpeechCheck(root){
-        if(!SpeechRecognition){setResult(root,'Dein Browser unterstützt die Spracherkennung nicht — versuch es in Chrome.','no');return}
+        if(!SpeechRecognition){setResult(root,'Your browser does not support speech recognition — try Chrome.','no');return}
         stopRecognition();stopModel();stopUser();
         var expected=root.dataset.expected,button=root.querySelector('.speech-check'),recognition=new SpeechRecognition(),finished=false;
         activeRecognition=recognition;recognition.lang='de-DE';recognition.continuous=false;recognition.interimResults=false;recognition.maxAlternatives=5;
-        recognition.onstart=function(){button.classList.add('listening');button.textContent='Ich höre …';setResult(root,'Sprich jetzt.','')};
+        recognition.onstart=function(){button.classList.add('listening');button.textContent='Listening…';setResult(root,'Speak now.','')};
         recognition.onresult=function(event){
           finished=true;var alternatives=event.results[0],heard=alternatives[0].transcript,best=speechScore(heard,expected),i;
           for(i=1;i<alternatives.length;i++){var candidate=alternatives[i].transcript,score=speechScore(candidate,expected);if(score>best){best=score;heard=candidate}}
           var result=root.querySelector('.speak-result');result.textContent='';
-          if(isCloseSpeech(heard,expected)){setResult(root,'✓ Sehr gut!','ok')}
+          if(isCloseSpeech(heard,expected)){setResult(root,'✓ Very good!','ok')}
           else{
-            result.className='speak-result no';result.appendChild(document.createTextNode('Gehört: '+heard+' / Erwartet: '+expected+' '));
-            var retry=document.createElement('button');retry.type='button';retry.className='retry-speak';retry.textContent='Nochmal';retry.addEventListener('click',function(){startSpeechCheck(root)});result.appendChild(retry);
+            result.className='speak-result no';result.appendChild(document.createTextNode('Heard: '+heard+' / Expected: '+expected+' '));
+            var retry=document.createElement('button');retry.type='button';retry.className='retry-speak';retry.textContent='Retry';retry.addEventListener('click',function(){startSpeechCheck(root)});result.appendChild(retry);
           }
         };
-        recognition.onerror=function(event){finished=true;var message=event.error==='not-allowed'?'Mikrofonzugriff wurde nicht erlaubt. Gib Chrome Zugriff auf dein Mikrofon.':event.error==='no-speech'?'Ich habe nichts gehört. Tippe auf „Nochmal“ und sprich deutlich.':'Die Spracherkennung konnte nicht starten. Versuch es noch einmal.';setResult(root,message,'no')};
-        recognition.onend=function(){button.classList.remove('listening');button.textContent='Sprech-Check';if(activeRecognition===recognition)activeRecognition=null;if(!finished)setResult(root,'Ich habe nichts gehört. Versuch es noch einmal.','no')};
-        try{recognition.start()}catch(error){activeRecognition=null;button.classList.remove('listening');button.textContent='Sprech-Check';setResult(root,'Die Spracherkennung konnte nicht starten. Versuch es noch einmal.','no')}
+        recognition.onerror=function(event){finished=true;var message=event.error==='not-allowed'?'Microphone access was denied. Please allow microphone access in your browser.':event.error==='no-speech'?'I didn\'t hear anything. Tap "Retry" and speak clearly.':'Speech recognition could not start. Try again.';setResult(root,message,'no')};
+        recognition.onend=function(){button.classList.remove('listening');button.textContent='Speech check';if(activeRecognition===recognition)activeRecognition=null;if(!finished)setResult(root,'I didn\'t hear anything. Try again.','no')};
+        try{recognition.start()}catch(error){activeRecognition=null;button.classList.remove('listening');button.textContent='Speech check';setResult(root,'Speech recognition could not start. Try again.','no')}
       }
 
       function finishRecording(recording){
@@ -876,34 +876,34 @@
         if(recording.recorder.state!=='inactive')recording.recorder.stop();
       }
       function startRecording(root){
-        if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.MediaRecorder){setResult(root,'Aufnahme wird in diesem Browser nicht unterstützt.','no');return}
-        if(activeRecorder){if(activeRecorder.root===root){finishRecording(activeRecorder);return}finishRecording(activeRecorder);setResult(root,'Die vorige Aufnahme wird beendet. Tippe gleich noch einmal.','');return}
-        stopRecognition();stopModel();stopUser();setResult(root,'Mikrofon wird vorbereitet …','');
+        if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.MediaRecorder){setResult(root,'Recording is not supported in this browser.','no');return}
+        if(activeRecorder){if(activeRecorder.root===root){finishRecording(activeRecorder);return}finishRecording(activeRecorder);setResult(root,'Finishing the previous recording. Tap again in a moment.','');return}
+        stopRecognition();stopModel();stopUser();setResult(root,'Preparing the microphone…','');
         navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
           var chunks=[],recorder=new MediaRecorder(stream),button=root.querySelector('.record-speech');
           activeRecorder={root:root,recorder:recorder,stream:stream,button:button};
           recorder.addEventListener('dataavailable',function(event){if(event.data&&event.data.size)chunks.push(event.data)});
           recorder.addEventListener('stop',function(){
-            stream.getTracks().forEach(function(track){track.stop()});button.classList.remove('recording');button.textContent='Aufnehmen';
+            stream.getTracks().forEach(function(track){track.stop()});button.classList.remove('recording');button.textContent='Record';
             var blob=new Blob(chunks,{type:recorder.mimeType||'audio/webm'});if(root._recordingUrl)URL.revokeObjectURL(root._recordingUrl);root._recordingUrl=URL.createObjectURL(blob);
-            var playButton=root.querySelector('.play-user');playButton.disabled=false;setResult(root,'Aufnahme fertig. Hör Modell und Du im Vergleich.','ok');if(activeRecorder&&activeRecorder.recorder===recorder)activeRecorder=null;
+            var playButton=root.querySelector('.play-user');playButton.disabled=false;setResult(root,'Recording done. Compare the model with your recording.','ok');if(activeRecorder&&activeRecorder.recorder===recorder)activeRecorder=null;
           });
-          recorder.addEventListener('error',function(){stream.getTracks().forEach(function(track){track.stop()});button.classList.remove('recording');button.textContent='Aufnehmen';setResult(root,'Die Aufnahme ist fehlgeschlagen. Versuch es noch einmal.','no');activeRecorder=null});
-          recorder.start();button.classList.add('recording');button.textContent='Stopp';setResult(root,'Aufnahme läuft — tippe auf „Stopp“, wenn du fertig bist.','');activeRecordTimer=setTimeout(function(){if(activeRecorder&&activeRecorder.recorder===recorder)finishRecording(activeRecorder)},15000);
-        }).catch(function(){setResult(root,'Mikrofonzugriff wurde nicht erlaubt. Gib Chrome Zugriff auf dein Mikrofon.','no')});
+          recorder.addEventListener('error',function(){stream.getTracks().forEach(function(track){track.stop()});button.classList.remove('recording');button.textContent='Record';setResult(root,'Recording failed. Try again.','no');activeRecorder=null});
+          recorder.start();button.classList.add('recording');button.textContent='Stop';setResult(root,'Recording… tap "Stop" when you are done.','');activeRecordTimer=setTimeout(function(){if(activeRecorder&&activeRecorder.recorder===recorder)finishRecording(activeRecorder)},15000);
+        }).catch(function(){setResult(root,'Microphone access was denied. Please allow microphone access in your browser.','no')});
       }
 
       function makePractice(expected,model){
         var root=document.createElement('div');root.className='speak-practice';root.dataset.expected=expected;root.dataset.model=model;
         var actions=document.createElement('div');actions.className='speak-actions';
         function addButton(className,label,aria){var button=document.createElement('button');button.type='button';button.className='speak-btn '+className;button.textContent=label;button.setAttribute('aria-label',aria);actions.appendChild(button);return button}
-        var modelPlay=addButton('play-model','Modell','Modell anhören: '+expected),check=addButton('speech-check','Sprech-Check','Aussprache prüfen: '+expected),record=addButton('record-speech','Aufnehmen','Eigene Stimme aufnehmen: '+expected),playUser=addButton('play-user','Du','Eigene Aufnahme anhören: '+expected);playUser.disabled=true;
+        var modelPlay=addButton('play-model','Model','Listen to the model: '+expected),check=addButton('speech-check','Speech check','Check pronunciation: '+expected),record=addButton('record-speech','Record','Record your voice: '+expected),playUser=addButton('play-user','My recording','Listen to your recording: '+expected);playUser.disabled=true;
         var result=document.createElement('p');result.className='speak-result';result.setAttribute('aria-live','polite');root.appendChild(actions);root.appendChild(result);
-        modelPlay.addEventListener('click',function(){if(modelButton===modelPlay&&!modelAudio.paused){stopModel();return}stopModel();stopUser();modelButton=modelPlay;modelPlay.classList.add('model-playing');modelAudio.src=model;modelAudio.defaultPlaybackRate=.75;modelAudio.playbackRate=.75;var started=modelAudio.play();if(started&&started.catch)started.catch(function(){setResult(root,'Das Modell konnte nicht abgespielt werden.','no');stopModel()})});
-        check.addEventListener('click',function(){startSpeechCheck(root)});record.addEventListener('click',function(){startRecording(root)});playUser.addEventListener('click',function(){if(!root._recordingUrl)return;if(userButton===playUser&&!userAudio.paused){stopUser();return}stopUser();stopModel();userButton=playUser;playUser.classList.add('model-playing');userAudio.src=root._recordingUrl;var started=userAudio.play();if(started&&started.catch)started.catch(function(){setResult(root,'Deine Aufnahme konnte nicht abgespielt werden.','no');stopUser()})});
+        modelPlay.addEventListener('click',function(){if(modelButton===modelPlay&&!modelAudio.paused){stopModel();return}stopModel();stopUser();modelButton=modelPlay;modelPlay.classList.add('model-playing');modelAudio.src=model;modelAudio.defaultPlaybackRate=.75;modelAudio.playbackRate=.75;var started=modelAudio.play();if(started&&started.catch)started.catch(function(){setResult(root,'The model audio could not be played.','no');stopModel()})});
+        check.addEventListener('click',function(){startSpeechCheck(root)});record.addEventListener('click',function(){startRecording(root)});playUser.addEventListener('click',function(){if(!root._recordingUrl)return;if(userButton===playUser&&!userAudio.paused){stopUser();return}stopUser();stopModel();userButton=playUser;playUser.classList.add('model-playing');userAudio.src=root._recordingUrl;var started=userAudio.play();if(started&&started.catch)started.catch(function(){setResult(root,'Your recording could not be played.','no');stopUser()})});
         return root;
       }
-      function addDialoguePractice(paragraph,expected,model){if(!paragraph)return;var box=document.createElement('div');box.className='dialogue-practice';var label=document.createElement('p');label.className='speak-target';label.appendChild(document.createTextNode('Üben: '));var strong=document.createElement('strong');strong.textContent=expected;label.appendChild(strong);box.appendChild(label);box.appendChild(makePractice(expected,model));paragraph.insertAdjacentElement('afterend',box)}
+      function addDialoguePractice(paragraph,expected,model){if(!paragraph)return;var box=document.createElement('div');box.className='dialogue-practice';var label=document.createElement('p');label.className='speak-target';label.appendChild(document.createTextNode('Practice: '));var strong=document.createElement('strong');strong.textContent=expected;label.appendChild(strong);box.appendChild(label);box.appendChild(makePractice(expected,model));paragraph.insertAdjacentElement('afterend',box)}
 
       var k1ShadowModels=['k1-chunk-guten-tag.mp3','k1-chunk-ich-heisse.mp3','k1-chunk-ich-komme-aus.mp3','k1-chunk-woher-kommen.mp3','k1-chunk-freut-mich.mp3','k1-chunk-tschuess.mp3'];
       var k1Shadow=document.querySelector('#k-shadow .shadow-lines');
